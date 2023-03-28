@@ -8,7 +8,7 @@ let channel = 'C050GE99TB4';
 
 const request = axios.create({
   headers: {
-    Authorization: 'Bearer xoxb-5040166571680-5013601171877-AyoYhdGw1TDYR9DyxrFbscIQ',
+    Authorization: 'Bearer xoxb-5040166571680-5013601171877-SagyF6QpllS0aI7eIzJVOgO9',
     'Content-Type': 'application/json'
   }
 })
@@ -37,11 +37,17 @@ const getMenu = async () => {
     let order = 1;
     $('[id*=Menu_]').find('[class*=menuItem___]').each(function(index, element) {
       const selector = $(element);
-      if (!selector.find('class*=disableOverlay___')) {
-        menu.push(`${order}. ${capitalize(selector.find('[class*=itemNameTitle___]').text())}`)
+      if (!!selector.find('[class*=disableOverlay___]').length) {
+        console.log(selector.html());
+        menu.push({
+          name: `${order}. ${capitalize(selector.find('[class*=itemNameTitle___]').text())}`,
+          image: selector.find('img').attr('src')
+        })
+
         order++;
       }
     })
+    console.log(menu)
     if (!menu.length) throw new Error('Menu is empty');
 
     let blocks = [
@@ -54,17 +60,25 @@ const getMenu = async () => {
       },
       {
         "type": "divider"
-      },
-      {
-        "type": "section",
-        "text": {
-          "type": "mrkdwn",
-          "text": (() => {
-            return menu.join('\n')
-          })()
-        }
       }
-    ]
+    ];
+    
+    menu.forEach(item => {
+      blocks.push({
+        "type": "context",
+        "elements": [
+          {
+            "type": "image",
+            "image_url": item.image,
+            "alt_text": item.name
+          },
+          {
+            "type": "mrkdwn",
+            "text": item.name
+          }
+        ]
+      })
+    })
     
     await sendMessage(blocks);
     return true;
@@ -76,28 +90,24 @@ const getMenu = async () => {
       return getMenu();
     }
     retry = 0;
-    sendMessage({
-      "type": "section",
-      "text": {
-        "type": "plain_text",
-        "text": "Em bị bọn grab chặn nên không chôm được menu hôm nay ạ :(."
-      }
-    });
     return false;
   }
 }
 
 const sendMessage = async blocks => {
   try {
-    await request.post('https://slack.com/api/chat.postMessage', {
+    const result = await request.post('https://slack.com/api/chat.postMessage', {
       channel,
       blocks
     });
+    if (result && result.data && result.data.ok === false) {
+      console.log(result);
+    }
   } catch (e) {
     console.log(e);
   }
 }
 
-app.listen(3000, () => {
-  console.log(`Example app listening on port ${3000}`)
+app.listen(5555, () => {
+  console.log(`Example app listening on port ${5555}`)
 })
