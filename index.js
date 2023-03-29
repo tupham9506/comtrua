@@ -8,7 +8,7 @@ let menuReviews = require('./menuReviews');
 
 const request = axios.create({
   headers: {
-    Authorization: 'Bearer xoxb-5040166571680-5015739561079-N4e6giZGqbpNCakSMh6Ibmpu',
+    Authorization: 'Bearer xoxb-5040166571680-5015739561079-Pws4KkqcHJoi6YGv19JEvoVI',
     'Content-Type': 'application/json'
   }
 })
@@ -38,7 +38,7 @@ const getMenu = async () => {
       "type": "section",
       "text": {
         "type": "mrkdwn",
-        "text": ":hamburger: *Mọi người đặt cơm nhé!*"
+        "text": "<!here> :hamburger: *Mọi người đặt cơm nhé!*"
       }
     },
     {
