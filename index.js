@@ -1,14 +1,14 @@
 const express = require('express')
 const app = express()
 const createPage = require('./crawler');
-const cheerio = require('cheerio');
 const axios = require('axios');
 let retry = 0;
 let channel = 'C050GE99TB4';
+let menuReviews = require('./menuReviews');
 
 const request = axios.create({
   headers: {
-    Authorization: 'Bearer xoxb-5040166571680-5013601171877-SagyF6QpllS0aI7eIzJVOgO9',
+    Authorization: 'Bearer xoxb-5040166571680-5015739561079-N4e6giZGqbpNCakSMh6Ibmpu',
     'Content-Type': 'application/json'
   }
 })
@@ -31,56 +31,52 @@ app.get('/com-trua', async (req, res) => {
 const getMenu = async () => {
   try {
     const page = await createPage('https://food.grab.com/vn/en/restaurant/c%C6%A1m-thu-ph%C6%B0%C6%A1ng-c%C6%A1m-v%C4%83n-ph%C3%B2ng-delivery/5-C2WTEVLBNFCUET');
-    const pageContent = await page.content();
-    const $ = cheerio.load(pageContent);
-    const menu = [];
-    let order = 1;
-    $('[id*=Menu_]').find('[class*=menuItem___]').each(function(index, element) {
-      const selector = $(element);
-      if (!!selector.find('[class*=disableOverlay___]').length) {
-        console.log(selector.html());
-        menu.push({
-          name: `${order}. ${capitalize(selector.find('[class*=itemNameTitle___]').text())}`,
-          image: selector.find('img').attr('src')
-        })
+    const json = JSON.parse(await (await page.waitForSelector('#__NEXT_DATA__')).evaluate(el => el.textContent));
+    const items = json.props.initialReduxState.pageRestaurantDetail.entities['5-C2WTEVLBNFCUET'].menu.categories[1].items;
 
-        order++;
+    const menu = [{
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": ":hamburger: *Mọi người đặt cơm nhé!*"
       }
-    })
-    console.log(menu)
-    if (!menu.length) throw new Error('Menu is empty');
+    },
+    {
+      "type": "divider"
+    },
+    {
+      "type": "divider"
+    }];
 
-    let blocks = [
-      {
+    items.forEach(item => {
+      if (!item.available) return false;
+      const name = capitalize(item.name).replace(/Cơm/, '');
+      let menuReview = menuReviews[item.ID] || {};
+      let review = menuReview.review ? `\n_${menuReview.review}_` : '';
+      let star = '';
+      if (menuReview.star) {
+        star = new Array(menuReview.star).fill(':star:').join(' ')
+        star = `\n${star}`
+      }
+      menu.push({
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": ":hamburger: *Mọi người đặt cơm nhé!*"
-        }
-      },
-      {
-        "type": "divider"
-      }
-    ];
-    
-    menu.forEach(item => {
-      blocks.push({
-        "type": "context",
-        "elements": [
-          {
+          "text": `*+1 ${name}*\n${star}${review}`
+        },
+        "accessory": {
             "type": "image",
-            "image_url": item.image,
-            "alt_text": item.name
-          },
-          {
-            "type": "mrkdwn",
-            "text": item.name
-          }
-        ]
+            "image_url": item.imgHref,
+            "alt_text": name
+        },
+      })
+
+      menu.push({
+        "type": "divider"
       })
     })
-    
-    await sendMessage(blocks);
+
+    await sendMessage(menu);
     return true;
 
   } catch (e) {
